@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    <title>F1 Reaction Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', monospace;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #e2e8f0 100%);
+            color: #1e293b;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            /* Prevent mobile zoom and bounce */
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: none;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(0, 0, 0, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(107, 114, 128, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Checkered stripes on sides */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 60px;
+            height: 100vh;
+            background-image: 
+                linear-gradient(45deg, #000000 25%, transparent 25%, transparent 75%, #000000 75%, #000000),
+                linear-gradient(45deg, #000000 25%, transparent 25%, transparent 75%, #000000 75%, #000000);
+            background-position: 0 0, 20px 20px;
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .checkered-stripe-right {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 60px;
+            height: 100vh;
+            background-image: 
+                linear-gradient(45deg, #000000 25%, transparent 25%, transparent 75%, #000000 75%, #000000),
+                linear-gradient(45deg, #000000 25%, transparent 25%, transparent 75%, #000000 75%, #000000);
+            background-position: 0 0, 20px 20px;
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 80px;
+            min-height: 100vh;
+            min-height: -webkit-fill-available; /* For iOS Safari */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Styles */
+        .game-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(90deg, #ffffff 0%, #f1f5f9 50%, #ffffff 100%);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 3px solid #3b82f6;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #000000 0%, #374151 50%, #000000 100%);
+        }
+
+        .game-title {
+            font-size: 3rem;
+            font-weight: 900;
+            text-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            color: #000000;
+            position: relative;
+        }
+
+        .game-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, #374151 50%, transparent 100%);
+        }
+
+        .team-info {
+            font-size: 1.4rem;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        
+        .team-tagline {
+            font-size: 1.1rem;
+            color: #6b7280;
+            font-weight: 400;
+            margin-top: 15px;
+        }
+
+        /* Game Area */
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 30px;
+            flex: 1;
+            align-items: start;
+        }
+
+        /* Stats Panel */
+        .stats-panel {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #3b82f6;
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .stats-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #000000 0%, #374151 100%);
+            border-radius: 15px 15px 0 0;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(59, 130, 246, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            position: relative;
+        }
+
+        .stat-item::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 10px;
+            right: 10px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, #6b7280 50%, transparent 100%);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #64748b;
+            font-weight: 400;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #3b82f6;
+        }
+
+        .reset-stats-container {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .reset-stats-btn {
+            background: linear-gradient(45deg, #dc2626 0%, #ef4444 100%);
+            border: none;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Orbitron', monospace;
+            width: 100%;
+        }
+
+        .reset-stats-btn:hover {
+            background: linear-gradient(45deg, #ef4444 0%, #f87171 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+        }
+
+        /* Reaction Zone */
+        .reaction-zone {
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            border: 3px solid #3b82f6;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .reaction-zone::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #000000 0%, #374151 50%, #000000 100%);
+            border-radius: 20px 20px 0 0;
+        }
+
+        .reaction-zone:hover {
+            border-color: #60a5fa;
+            box-shadow: 0 20px 40px rgba(59, 130, 246, 0.2);
+        }
+
+        .reaction-zone.clickable {
+            cursor: pointer;
+            background: linear-gradient(145deg, #dbeafe 0%, #3b82f6 100%);
+            border-color: #60a5fa;
+            transform: scale(1.02);
+        }
+
+        /* Start Message */
+        .start-message h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #1e293b;
+        }
+
+        .start-message p {
+            font-size: 1.2rem;
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+
+        .start-btn {
+            background: linear-gradient(45deg, #3b82f6 0%, #60a5fa 100%);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Orbitron', monospace;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+
+        .start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(59, 130, 246, 0.4);
+            background: linear-gradient(45deg, #60a5fa 0%, #93c5fd 100%);
+        }
+
+        /* Waiting Message */
+        .waiting-message h2 {
+            font-size: 2rem;
+            margin-bottom: 30px;
+            color: #1e293b;
+        }
+
+        .light-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .light {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid #374151;
+            background: #6b7280;
+            transition: all 0.3s ease;
+            margin: 0 5px;
+            position: relative;
+        }
+
+        .light::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border-radius: 50%;
+            background: #374151;
+            opacity: 0.3;
+        }
+
+        .light.grey {
+            background: #6b7280;
+            box-shadow: none;
+        }
+
+        .light.red {
+            background: #dc2626;
+            box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
+        }
+
+        .light.yellow {
+            background: #ca8a04;
+            box-shadow: 0 0 20px rgba(202, 138, 4, 0.5);
+        }
+
+        .light.green {
+            background: #16a34a;
+            box-shadow: 0 0 20px rgba(22, 163, 74, 0.5);
+        }
+
+        /* Click Message */
+        .click-message h2 {
+            font-size: 4rem;
+            margin-bottom: 30px;
+            color: #16a34a;
+            text-shadow: 0 0 20px rgba(22, 163, 74, 0.5);
+            animation: pulse 0.5s infinite;
+            font-weight: 900;
+            position: relative;
+        }
+
+        .click-message h2::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -20px;
+            right: -20px;
+            bottom: -10px;
+            background: linear-gradient(45deg, rgba(0, 0, 0, 0.1) 0%, rgba(107, 114, 128, 0.1) 100%);
+            border-radius: 15px;
+            z-index: -1;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .timer {
+            font-size: 4rem;
+            font-weight: 900;
+            color: #3b82f6;
+            text-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+            margin: 20px 0;
+        }
+
+        /* Result Message */
+        .result-message h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #1e293b;
+        }
+
+        .result-time {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin: 20px 0;
+            color: #3b82f6;
+            text-shadow: 0 0 25px rgba(59, 130, 246, 0.5);
+        }
+
+        .result-feedback {
+            font-size: 1.3rem;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .result-feedback.excellent {
+            background: rgba(22, 163, 74, 0.2);
+            color: #4ade80;
+            border: 2px solid #4ade80;
+        }
+
+        .result-feedback.good {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border: 2px solid #60a5fa;
+        }
+
+        .result-feedback.average {
+            background: rgba(202, 138, 4, 0.2);
+            color: #fbbf24;
+            border: 2px solid #fbbf24;
+        }
+
+        .result-feedback.slow {
+            background: rgba(220, 38, 38, 0.2);
+            color: #f87171;
+            border: 2px solid #f87171;
+        }
+
+        .restart-btn {
+            background: linear-gradient(45deg, #3b82f6 0%, #60a5fa 100%);
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Orbitron', monospace;
+            margin-top: 20px;
+        }
+
+        .restart-btn:hover {
+            background: linear-gradient(45deg, #60a5fa 0%, #93c5fd 100%);
+            transform: translateY(-2px);
+        }
+
+        /* False Start Message */
+        .false-start-message h2 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: #dc2626;
+            text-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
+            animation: shake 0.5s ease-in-out;
+        }
+
+        .false-start-message p {
+            font-size: 1.3rem;
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Leaderboard */
+        .leaderboard {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #3b82f6;
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .leaderboard::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #000000 0%, #374151 100%);
+            border-radius: 15px 15px 0 0;
+        }
+
+        .leaderboard h3 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #1e293b;
+            text-align: center;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 10px;
+        }
+
+        .leaderboard-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background: rgba(59, 130, 246, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .leaderboard-item::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 5px;
+            right: 5px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, #6b7280 50%, transparent 100%);
+        }
+
+        .leaderboard-item:hover {
+            background: rgba(59, 130, 246, 0.1);
+            transform: translateX(5px);
+            border-color: #374151;
+        }
+
+        .leaderboard-item .rank {
+            font-weight: 700;
+            color: #3b82f6;
+            min-width: 30px;
+        }
+
+        .leaderboard-item .time {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .leaderboard-item .date {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .no-times {
+            text-align: center;
+            color: #64748b;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        /* Footer */
+        .game-footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: #64748b;
+            font-size: 1rem;
+            position: relative;
+        }
+
+        .game-footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, #374151 50%, transparent 100%);
+        }
+
+        /* Rules Section */
+        .rules-section {
+            margin-top: 30px;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #3b82f6;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .rules-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #000000 0%, #374151 100%);
+            border-radius: 15px 15px 0 0;
+        }
+
+        .rules-section h3 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #1e293b;
+            text-align: center;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 10px;
+        }
+
+        .rules-content {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .rule-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 8px 0;
+        }
+
+        .rule-number {
+            font-weight: 700;
+            color: #3b82f6;
+            font-size: 1.1rem;
+            min-width: 20px;
+        }
+
+        .rule-text {
+            color: #1e293b;
+            font-size: 1rem;
+            line-height: 1.4;
+            text-align: left;
+        }
+
+        .rule-text strong {
+            color: #3b82f6;
+            font-weight: 700;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 15px 20px;
+            }
+            
+            .game-area {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .game-title {
+                font-size: 1.8rem;
+                letter-spacing: 2px;
+            }
+            
+            .team-info {
+                font-size: 1.2rem;
+            }
+            
+            .team-tagline {
+                font-size: 1rem;
+            }
+            
+            .reaction-zone {
+                padding: 15px;
+                min-height: 250px;
+                border-width: 2px;
+            }
+            
+            .click-message h2 {
+                font-size: 1.8rem;
+            }
+            
+            .timer {
+                font-size: 2rem;
+            }
+            
+            .result-time {
+                font-size: 2rem;
+            }
+            
+            .start-btn {
+                padding: 12px 30px;
+                font-size: 1.1rem;
+            }
+            
+            .stat-item {
+                padding: 12px;
+                margin-bottom: 15px;
+            }
+            
+            .stat-label {
+                font-size: 0.8rem;
+            }
+            
+            .stat-value {
+                font-size: 1rem;
+            }
+            
+            body::after,
+            .checkered-stripe-right {
+                display: none;
+            }
+            
+            /* Prevent text selection on mobile */
+            * {
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+            
+            /* Improve touch targets */
+            button {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            .reaction-zone {
+                -webkit-tap-highlight-color: transparent;
+            }
+        }
+        
+        /* iPhone specific optimizations */
+        @media (max-width: 414px) {
+            .game-container {
+                padding: 10px 15px;
+            }
+            
+            .game-title {
+                font-size: 1.5rem;
+                letter-spacing: 1px;
+            }
+            
+            .team-info {
+                font-size: 1rem;
+            }
+            
+            .team-tagline {
+                font-size: 0.9rem;
+            }
+            
+            .reaction-zone {
+                min-height: 200px;
+            }
+            
+            .click-message h2 {
+                font-size: 1.5rem;
+            }
+            
+            .timer {
+                font-size: 1.8rem;
+            }
+            
+            .result-time {
+                font-size: 1.8rem;
+            }
+        }
+        
+        /* iOS Safari specific fixes */
+        @supports (-webkit-touch-callout: none) {
+            .game-container {
+                min-height: -webkit-fill-available;
+            }
+            
+            body {
+                min-height: -webkit-fill-available;
+            }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #60a5fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="checkered-stripe-right"></div>
+    <div class="game-container">
+        <header class="game-header">
+            <h1 class="game-title">F1 REACTION GAME</h1>
+            <div class="team-info">Team SW1FT</div>
+            <div class="team-tagline">Are you Swift enough?</div>
+        </header>
+
+        <div class="game-area">
+            <div class="stats-panel">
+                <div class="stat-item">
+                    <span class="stat-label">Best Time</span>
+                    <span class="stat-value" id="bestTime">--</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Average</span>
+                    <span class="stat-value" id="averageTime">--</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Attempts</span>
+                    <span class="stat-value" id="attempts">0</span>
+                </div>
+                <div class="reset-stats-container">
+                    <button class="reset-stats-btn" id="resetStatsBtn">Reset Stats</button>
+                </div>
+            </div>
+
+            <div class="reaction-zone" id="reactionZone">
+                <div class="start-message" id="startMessage">
+                    <h2>Ready to Race?</h2>
+                    <p>Click START to begin</p>
+                    <button class="start-btn" id="startBtn">START</button>
+                </div>
+                
+                <div class="waiting-message" id="waitingMessage" style="display: none;">
+                    <h2>Wait for the Lights...</h2>
+                    <div class="light-indicator">
+                        <div class="light red"></div>
+                        <div class="light red"></div>
+                        <div class="light red"></div>
+                        <div class="light red"></div>
+                        <div class="light red"></div>
+                    </div>
+                </div>
+
+                <div class="click-message" id="clickMessage" style="display: none;">
+                    <h2>GO!</h2>
+                    <div class="timer" id="timer">0.000</div>
+                </div>
+
+                <div class="false-start-message" id="falseStartMessage" style="display: none;">
+                    <h2>FALSE START!</h2>
+                    <p>You clicked too early!</p>
+                    <button class="restart-btn" id="falseStartRestartBtn">Try Again</button>
+                </div>
+
+                <div class="result-message" id="resultMessage" style="display: none;">
+                    <h2 id="resultTitle">Result</h2>
+                    <div class="result-time" id="resultTime">0.000</div>
+                    <div class="result-feedback" id="resultFeedback"></div>
+                    <button class="restart-btn" id="restartBtn">Try Again</button>
+                </div>
+            </div>
+
+            <div class="leaderboard">
+                <h3>Top Times</h3>
+                <div class="leaderboard-list" id="leaderboardList">
+                    <div class="no-times">No times recorded yet</div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="game-footer">
+            <p>Test your reflexes like a Formula 1 driver!</p>
+            
+            <div class="rules-section">
+                <h3>How to Play</h3>
+                <div class="rules-content">
+                    <div class="rule-item">
+                        <span class="rule-number">1.</span>
+                        <span class="rule-text">Click <strong>START</strong> to begin the game</span>
+                    </div>
+                    <div class="rule-item">
+                        <span class="rule-number">2.</span>
+                        <span class="rule-text">Watch the lights turn red from left to right</span>
+                    </div>
+                    <div class="rule-item">
+                        <span class="rule-number">3.</span>
+                        <span class="rule-text">Wait for all 5 lights to turn red, then pause</span>
+                    </div>
+                    <div class="rule-item">
+                        <span class="rule-number">4.</span>
+                        <span class="rule-text">When you see <strong>GO!</strong>, click immediately</span>
+                    </div>
+                    <div class="rule-item">
+                        <span class="rule-number">5.</span>
+                        <span class="rule-text">Don't click too early - that's a false start!</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        class F1ReactionGame {
+            constructor() {
+                this.gameState = 'start'; // start, waiting, clickable, result
+                this.startTime = 0;
+                this.reactionTime = 0;
+                this.times = [];
+                this.attempts = 0;
+                this.bestTime = Infinity;
+                this.averageTime = 0;
+                this.waitTime = 0;
+                this.timerInterval = null;
+                this.waitTimeout = null;
+                this.lightTimers = []; // Store light sequence timer IDs
+                
+                this.initializeElements();
+                this.bindEvents();
+                this.loadTimes();
+                this.updateStats();
+                this.updateLeaderboard();
+            }
+
+            initializeElements() {
+                // Game state elements
+                this.startMessage = document.getElementById('startMessage');
+                this.waitingMessage = document.getElementById('waitingMessage');
+                this.clickMessage = document.getElementById('clickMessage');
+                this.resultMessage = document.getElementById('resultMessage');
+                this.falseStartMessage = document.getElementById('falseStartMessage');
+                
+                // Buttons
+                this.startBtn = document.getElementById('startBtn');
+                this.restartBtn = document.getElementById('restartBtn');
+                this.falseStartRestartBtn = document.getElementById('falseStartRestartBtn');
+                this.resetStatsBtn = document.getElementById('resetStatsBtn');
+                
+                // Display elements
+                this.timer = document.getElementById('timer');
+                this.resultTime = document.getElementById('resultTime');
+                this.resultTitle = document.getElementById('resultTitle');
+                this.resultFeedback = document.getElementById('resultFeedback');
+                
+                // Stats elements
+                this.bestTimeDisplay = document.getElementById('bestTime');
+                this.averageTimeDisplay = document.getElementById('averageTime');
+                this.attemptsDisplay = document.getElementById('attempts');
+                
+                // Leaderboard
+                this.leaderboardList = document.getElementById('leaderboardList');
+                
+                // Reaction zone
+                this.reactionZone = document.getElementById('reactionZone');
+            }
+
+            bindEvents() {
+                // Add both click and touch events for better mobile support
+                const addEventListeners = (element, eventType, handler) => {
+                    element.addEventListener(eventType, handler);
+                    if (eventType === 'click') {
+                        element.addEventListener('touchstart', (e) => {
+                            e.preventDefault(); // Prevent default touch behavior
+                            handler(e);
+                        }, { passive: false });
+                    }
+                };
+
+                addEventListeners(this.startBtn, 'click', (e) => {
+                    e.stopPropagation(); // Prevent event from bubbling to reaction zone
+                    this.startGame();
+                });
+                
+                addEventListeners(this.restartBtn, 'click', (e) => {
+                    e.stopPropagation(); // Prevent event from bubbling to reaction zone
+                    this.resetGame();
+                });
+                
+                addEventListeners(this.falseStartRestartBtn, 'click', (e) => {
+                    e.stopPropagation(); // Prevent event from bubbling to reaction zone
+                    this.resetGame();
+                });
+                
+                addEventListeners(this.resetStatsBtn, 'click', (e) => {
+                    e.stopPropagation(); // Prevent event from bubbling to reaction zone
+                    this.resetStats();
+                });
+                
+                // For the reaction zone, we want to handle both click and touch
+                this.reactionZone.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.handleReactionClick();
+                });
+                
+                this.reactionZone.addEventListener('touchstart', (e) => {
+                    e.preventDefault(); // Prevent default touch behavior
+                    this.handleReactionClick();
+                }, { passive: false });
+            }
+
+            startGame() {
+                this.gameState = 'waiting';
+                this.showWaitingMessage();
+                
+                // Start the light sequence immediately
+                this.animateLights();
+            }
+
+            showWaitingMessage() {
+                this.startMessage.style.display = 'none';
+                this.waitingMessage.style.display = 'block';
+                this.clickMessage.style.display = 'none';
+                this.resultMessage.style.display = 'none';
+                this.falseStartMessage.style.display = 'none';
+                
+                // Animate lights
+                this.animateLights();
+            }
+
+            animateLights() {
+                const lights = document.querySelectorAll('.light');
+                
+                // Clear any existing timers
+                this.clearLightTimers();
+                
+                // Start with all lights grey
+                lights.forEach(light => {
+                    light.classList.remove('red', 'yellow', 'green');
+                    light.classList.add('grey');
+                });
+                
+                // Lights turn red from left to right
+                this.lightTimers.push(setTimeout(() => {
+                    lights[0].classList.remove('grey');
+                    lights[0].classList.add('red');
+                }, 1000));
+                this.lightTimers.push(setTimeout(() => {
+                    lights[1].classList.remove('grey');
+                    lights[1].classList.add('red');
+                }, 2000));
+                this.lightTimers.push(setTimeout(() => {
+                    lights[2].classList.remove('grey');
+                    lights[2].classList.add('red');
+                }, 3000));
+                this.lightTimers.push(setTimeout(() => {
+                    lights[3].classList.remove('grey');
+                    lights[3].classList.add('red');
+                }, 4000));
+                this.lightTimers.push(setTimeout(() => {
+                    lights[4].classList.remove('grey');
+                    lights[4].classList.add('red');
+                }, 5000));
+                
+                // After all lights are red, wait a longer pause then show GO
+                this.lightTimers.push(setTimeout(() => {
+                    this.startReactionTest();
+                }, 8000));
+            }
+
+            startReactionTest() {
+                this.gameState = 'clickable';
+                this.startTime = performance.now();
+                
+                this.waitingMessage.style.display = 'none';
+                this.clickMessage.style.display = 'block';
+                
+                this.reactionZone.classList.add('clickable');
+                
+                // Turn all lights green when GO appears
+                const lights = document.querySelectorAll('.light');
+                lights.forEach(light => {
+                    light.classList.remove('red', 'grey');
+                    light.classList.add('green');
+                });
+                
+                // Start timer display
+                this.timerInterval = setInterval(() => {
+                    const currentTime = performance.now();
+                    const elapsed = (currentTime - this.startTime) / 1000; // Convert to seconds
+                    this.timer.textContent = elapsed.toFixed(3);
+                }, 10);
+            }
+
+            handleReactionClick() {
+                if (this.gameState === 'waiting') {
+                    // False start! - clicked during waiting phase before green light
+                    this.handleFalseStart();
+                    return;
+                }
+                
+                if (this.gameState !== 'clickable') return;
+                
+                const endTime = performance.now();
+                this.reactionTime = (endTime - this.startTime) / 1000; // Convert to seconds
+                
+                this.gameState = 'result';
+                this.reactionZone.classList.remove('clickable');
+                
+                clearInterval(this.timerInterval);
+                
+                this.showResult();
+            }
+
+            handleFalseStart() {
+                this.gameState = 'falseStart';
+                
+                // Clear any timeouts
+                if (this.waitTimeout) {
+                    clearTimeout(this.waitTimeout);
+                }
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
+                
+                // Clear all light sequence timers
+                this.clearLightTimers();
+                
+                this.waitingMessage.style.display = 'none';
+                this.clickMessage.style.display = 'none';
+                this.resultMessage.style.display = 'none';
+                this.falseStartMessage.style.display = 'block';
+                
+                this.reactionZone.classList.remove('clickable');
+                
+                // Reset lights
+                const lights = document.querySelectorAll('.light');
+                lights.forEach(light => {
+                    light.classList.remove('red', 'yellow', 'green', 'grey');
+                });
+            }
+
+            clearLightTimers() {
+                this.lightTimers.forEach(timerId => {
+                    clearTimeout(timerId);
+                });
+                this.lightTimers = [];
+            }
+
+            resetStats() {
+                // Confirm with user before resetting
+                if (confirm('Are you sure you want to reset all statistics? This cannot be undone.')) {
+                    // Reset all stats
+                    this.times = [];
+                    this.attempts = 0;
+                    this.bestTime = Infinity;
+                    this.averageTime = 0;
+                    
+                    // Clear from localStorage
+                    try {
+                        localStorage.removeItem('f1ReactionTimes');
+                        localStorage.removeItem('f1ReactionAttempts');
+                        localStorage.removeItem('f1ReactionBestTime');
+                        localStorage.removeItem('f1ReactionAverageTime');
+                    } catch (error) {
+                        console.error('Failed to clear localStorage:', error);
+                    }
+                    
+                    // Update displays
+                    this.updateStats();
+                    this.updateLeaderboard();
+                    
+                    // Show confirmation
+                    alert('Statistics have been reset!');
+                }
+            }
+
+            showResult() {
+                this.clickMessage.style.display = 'none';
+                this.resultMessage.style.display = 'block';
+                
+                this.resultTime.textContent = this.reactionTime.toFixed(3) + 's';
+                
+                // Determine feedback based on reaction time (in seconds)
+                let feedback, feedbackClass;
+                if (this.reactionTime < 0.200) {
+                    feedback = "INCREDIBLE! F1 Champion level reflexes!";
+                    feedbackClass = "excellent";
+                } else if (this.reactionTime < 0.300) {
+                    feedback = "EXCELLENT! You're ready for the grid!";
+                    feedbackClass = "excellent";
+                } else if (this.reactionTime < 0.400) {
+                    feedback = "GOOD! Solid driver material!";
+                    feedbackClass = "good";
+                } else if (this.reactionTime < 0.500) {
+                    feedback = "AVERAGE! Room for improvement.";
+                    feedbackClass = "average";
+                } else {
+                    feedback = "SLOW! Need more practice!";
+                    feedbackClass = "slow";
+                }
+                
+                this.resultFeedback.textContent = feedback;
+                this.resultFeedback.className = `result-feedback ${feedbackClass}`;
+                
+                // Update game data
+                this.attempts++;
+                this.times.push(this.reactionTime);
+                
+                if (this.reactionTime < this.bestTime) {
+                    this.bestTime = this.reactionTime;
+                    this.resultTitle.textContent = "NEW BEST TIME!";
+                } else {
+                    this.resultTitle.textContent = "Result";
+                }
+                
+                this.calculateAverage();
+                this.saveTimes();
+                this.updateStats();
+                this.updateLeaderboard();
+            }
+
+            calculateAverage() {
+                if (this.times.length > 0) {
+                    const sum = this.times.reduce((a, b) => a + b, 0);
+                    this.averageTime = sum / this.times.length;
+                }
+            }
+
+            resetGame() {
+                this.gameState = 'start';
+                this.startMessage.style.display = 'block';
+                this.waitingMessage.style.display = 'none';
+                this.clickMessage.style.display = 'none';
+                this.resultMessage.style.display = 'none';
+                this.falseStartMessage.style.display = 'none';
+                
+                this.reactionZone.classList.remove('clickable');
+                
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
+                if (this.waitTimeout) {
+                    clearTimeout(this.waitTimeout);
+                }
+                
+                // Clear all light sequence timers
+                this.clearLightTimers();
+                
+                this.timer.textContent = '0.000s';
+                
+                // Reset lights
+                const lights = document.querySelectorAll('.light');
+                lights.forEach(light => {
+                    light.classList.remove('red', 'yellow', 'green', 'grey');
+                });
+            }
+
+            updateStats() {
+                this.bestTimeDisplay.textContent = this.bestTime === Infinity ? '--' : this.bestTime.toFixed(3) + 's';
+                this.averageTimeDisplay.textContent = this.averageTime === 0 ? '--' : this.averageTime.toFixed(3) + 's';
+                this.attemptsDisplay.textContent = this.attempts;
+            }
+
+            updateLeaderboard() {
+                if (this.times.length === 0) {
+                    this.leaderboardList.innerHTML = '<div class="no-times">No times recorded yet</div>';
+                    return;
+                }
+                
+                // Sort times and get top 10
+                const sortedTimes = [...this.times].sort((a, b) => a - b).slice(0, 10);
+                
+                this.leaderboardList.innerHTML = '';
+                
+                sortedTimes.forEach((time, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'leaderboard-item';
+                    
+                    const rank = document.createElement('span');
+                    rank.className = 'rank';
+                    rank.textContent = `#${index + 1}`;
+                    
+                    const timeSpan = document.createElement('span');
+                    timeSpan.className = 'time';
+                    timeSpan.textContent = `${time.toFixed(3)}s`;
+                    
+                    const date = document.createElement('span');
+                    date.className = 'date';
+                    date.textContent = new Date().toLocaleDateString();
+                    
+                    item.appendChild(rank);
+                    item.appendChild(timeSpan);
+                    item.appendChild(date);
+                    
+                    this.leaderboardList.appendChild(item);
+                });
+            }
+
+            saveTimes() {
+                try {
+                    localStorage.setItem('f1ReactionTimes', JSON.stringify(this.times));
+                    localStorage.setItem('f1ReactionAttempts', this.attempts.toString());
+                    localStorage.setItem('f1ReactionBestTime', this.bestTime.toString());
+                    localStorage.setItem('f1ReactionAverageTime', this.averageTime.toString());
+                } catch (error) {
+                    console.error('Failed to save times:', error);
+                }
+            }
+
+            loadTimes() {
+                try {
+                    const savedTimes = localStorage.getItem('f1ReactionTimes');
+                    const savedAttempts = localStorage.getItem('f1ReactionAttempts');
+                    const savedBestTime = localStorage.getItem('f1ReactionBestTime');
+                    const savedAverageTime = localStorage.getItem('f1ReactionAverageTime');
+                    
+                    if (savedTimes) {
+                        this.times = JSON.parse(savedTimes);
+                    }
+                    if (savedAttempts) {
+                        this.attempts = parseInt(savedAttempts);
+                    }
+                    if (savedBestTime) {
+                        this.bestTime = parseFloat(savedBestTime);
+                    }
+                    if (savedAverageTime) {
+                        this.averageTime = parseFloat(savedAverageTime);
+                    }
+                } catch (error) {
+                    console.error('Failed to load times:', error);
+                }
+            }
+
+            // Add some F1-themed sound effects (optional)
+            playSound(type) {
+                // This could be expanded with actual sound files
+                console.log(`Playing ${type} sound`);
+            }
+        }
+
+        // Initialize the game when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new F1ReactionGame();
+        });
+
+        // Add some additional F1-themed features
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'Space') {
+                event.preventDefault();
+                const game = window.f1Game;
+                if (game && game.gameState === 'clickable') {
+                    game.handleReactionClick();
+                }
+            }
+        });
+
+        // Add some visual effects
+        function addParticleEffect(x, y) {
+            const particle = document.createElement('div');
+            particle.style.position = 'absolute';
+            particle.style.left = x + 'px';
+            particle.style.top = y + 'px';
+            particle.style.width = '4px';
+            particle.style.height = '4px';
+            particle.style.background = '#60a5fa';
+            particle.style.borderRadius = '50%';
+            particle.style.pointerEvents = 'none';
+            particle.style.animation = 'particle 0.6s ease-out forwards';
+            
+            document.body.appendChild(particle);
+            
+            setTimeout(() => {
+                document.body.removeChild(particle);
+            }, 600);
+        }
+
+        // Add CSS animation for particles
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes particle {
+                0% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+                100% {
+                    transform: scale(0) translateY(-20px);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html> 
